@@ -117,7 +117,8 @@ async function startFenrys() {
 
         console.log(chalk.magentaBright('\nMasukkan nomor WhatsApp (contoh: 628xxxxx)'));
         const phoneNumber = await question('Nomor: ');
-        const pairingCode = await fenrys.requestPairingCode(phoneNumber, global.botName);
+        await sleep(3000);
+        const pairingCode = await fenrys.requestPairingCode(phoneNumber);
 
         console.log(chalk.green('\n✅ Kode pairing: ' + chalk.bold.white(pairingCode) + '\n'));
     }
@@ -192,11 +193,19 @@ async function startFenrys() {
     });
 
     fenrys.ev.on('messages.upsert', async ({ messages }) => {
+        console.log('[messages.upsert] received:', messages?.length || 0);
         for (const message of messages || []) {
+            console.log('[messages.upsert] message:', {
+                remoteJid: message?.key?.remoteJid,
+                fromMe: message?.key?.fromMe,
+                type: message?.message ? Object.keys(message.message)[0] : 'none'
+            });
             if (!message.message) continue;
             if (message.key.remoteJid === 'status@broadcast') continue;
 
-            import('./handler.js').then(({ default: handle }) => handle(fenrys, message, store));
+            import('./handler.js')
+                .then(({ default: handle }) => handle(fenrys, message, store))
+                .catch((err) => console.error('[messages.upsert]', err));
         }
     });
 }
